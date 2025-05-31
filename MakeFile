@@ -1,2 +1,7 @@
-run:
-	@go run main.go
+run: build
+	@ ./bin/My_Redis
+
+
+build:
+	@go build -o bin/My_Redis .
+
