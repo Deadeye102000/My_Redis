@@ -103,8 +103,9 @@ func (s *Server) handleConn(conn net.Conn) {
 	if err := peer.readLoop(); err != nil {
 		slog.Error("error reading from peer", "err", err, "remoteAddr", conn.RemoteAddr())
 	}
-	peer.readLoop()
-
+	// peer.readLoop()
+	conn.Close()
+	slog.Info("peer disconnected", "remoteAddr", conn.RemoteAddr())
 }
 
 func main() {

@@ -2,6 +2,8 @@ package main
 
 import (
 	// "fmt"
+	"io"
+	"log/slog"
 	"net"
 	// "log/slog"
 )
@@ -44,6 +46,11 @@ func (p *Peer) readLoop() error {
 	for {
 		n, err := p.conn.Read(buf)
 		if err != nil {
+			if err == io.EOF {
+				slog.Info("peer disconnected", "addr", p.conn.RemoteAddr().String())
+				return nil
+			}
+			slog.Info("ERROR read from %s failed: %v", p.conn.RemoteAddr().String(), err)
 			// slog.Error("read error", "err", err)
 			// p.conn.Close()
 			return err

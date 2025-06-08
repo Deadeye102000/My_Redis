@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"log"
 
 	"github.com/tidwall/resp"
 )
@@ -24,35 +23,33 @@ func parseCommand(raw string) (Command, error) {
 	rd := resp.NewReader(bytes.NewBufferString(raw))
 	for {
 		v, _, err := rd.ReadValue()
-		if err == io.EOF {
-			break
-		}
 		if err != nil {
-			log.Fatal(err)
+			if err == io.EOF {
+				return nil, err // disconnect, not fatal
+			}
+			return nil, fmt.Errorf("RESP parse error: %v", err)
 		}
-		// fmt.Printf("Read %s\n", v.Type())
 
-		// var cmd Command
 		if v.Type() == resp.Array {
-			for _, value := range v.Array() {
-				switch value.String() {
-				case CommandSET:
-					if len(v.Array()) != 3 {
-						// panic("yikes")
-						return nil, fmt.Errorf("expected 3 elements in SET command, got %d", len(v.Array()))
-					}
-					cmd := SetCommand{
-						key: v.Array()[1].String(),
-						val: v.Array()[2].String(),
-					}
+			arr := v.Array()
+			if len(arr) == 0 {
+				return nil, fmt.Errorf("empty command array")
+			}
 
-					return cmd, nil
-
+			switch arr[0].String() {
+			case CommandSET:
+				if len(arr) != 3 {
+					return nil, fmt.Errorf("SET command must have 3 elements")
 				}
-
+				return SetCommand{
+					key: arr[1].String(),
+					val: arr[2].String(),
+				}, nil
+			default:
+				return nil, fmt.Errorf("unknown command: %s", arr[0].String())
 			}
 		}
-		return nil, fmt.Errorf("Invalid or unknown command received: %s", raw)
+
+		return nil, fmt.Errorf("expected array RESP type")
 	}
-	return nil, fmt.Errorf("Invalid or unknown command received: %s", raw)
 }
