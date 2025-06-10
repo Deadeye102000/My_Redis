@@ -1,9 +1,13 @@
 package main
 
 import (
+	"My_Redis/client"
+	"context"
 	"log"
+
 	"log/slog"
 	"net"
+	"time"
 )
 
 const defaultListenAddr = ":5001"
@@ -109,6 +113,21 @@ func (s *Server) handleConn(conn net.Conn) {
 }
 
 func main() {
-	server := NewServer(Config{})
-	log.Fatal(server.Start())
+	go func() {
+		server := NewServer(Config{})
+		log.Fatal(server.Start())
+	}()
+	time.Sleep(time.Second) // wait for the server to start
+
+	c := client.NewClient("localhost:5001")
+
+	// select {} // we are blocking here so the program does not exit
+	// if err != nil {
+	// 	log.Fatal("error creating client", err)
+	// }
+	if err := c.Set(context.TODO(), "foo", "bar"); err != nil {
+		log.Fatal(err)
+	}
+
+	select {}
 }
